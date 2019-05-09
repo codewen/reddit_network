@@ -1,5 +1,19 @@
 import csv
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+
+
+
+
+def readTitle():
+    array = []
+    with open('./soc-title.tsv') as tsvfile:
+        reader = csv.reader(tsvfile, delimiter='\t')
+        for row in reader:
+            array.append(row)
+        
+
 
 def readBody():
     array = []
@@ -13,49 +27,68 @@ def readBody():
         fromArr = list(map(lambda x:x[0], array))
         toArr = list(map(lambda x:x[1], array))
         IDArr = list(map(lambda x:x[2], array))
-        TimeArr = list(map(lambda x:x[3], array))
+        TimeArr = list(map(lambda x:x[3][:10], array))
         sentimentArr = list(map(lambda x:x[4], array))
-        propArr = list(map(lambda x:x[5].split(',')[0], array))
+        # propArr = list(map(lambda x:x[5].split(',')[0], array))
 
+        # remove heading
         fromArr.pop(0)
         toArr.pop(0)
         IDArr.pop(0)
         TimeArr.pop(0)
         sentimentArr.pop(0)
-        propArr.pop(0)
+        # propArr.pop(0)
 
         
         df = pd.DataFrame({
-            # 'from':fromArr,
-            # 'to':toArr,
+            'source':fromArr,
+            'target':toArr,
             'ID':IDArr,
-            # 'Time':TimeArr,
-            # 'sentiment':sentimentArr,
-            'prop':propArr
+            'Time':TimeArr,
+            'sentiment':sentimentArr,
+            # 'prop':propArr
         })
-        print(df.shape)
         
-        is_minus_1 =  df['ID']=='3yj2ee'
+        # filter by contition
 
+        hateArr = df[df['sentiment'] == '-1']
+        # likeArr = df[df['sentiment'] == '1']
 
-        df = df[is_minus_1]
-        print(df)
-        # df = df.groupby(['to']).count()
-        # df = df.sort_values(by=['sentiment'], ascending=False)
+        hateArr = hateArr[hateArr['source'] == 'conspiracy ']
+    
+        hateArr = hateArr.filter(["source",'target'])
+        # likeArr = likeArr.filter(["source",'target'])
 
-        # print(df.shape)
+        # group the data
+        # hateArr = hateArr.groupby(['source']).count()
+        # hateArr = hateArr.sort_values(by=['target'], ascending=False)
 
-
+               
+        print(hateArr)
+        hateArr = hateArr.sort_values(by=['target'], ascending=False)
 
         
 
 
-def readTitle():
-    array = []
-    with open('./soc-title.tsv') as tsvfile:
-        reader = csv.reader(tsvfile, delimiter='\t')
-        for row in reader:
-            array.append(row)
-        print(array)
+        return hateArr
 
-readBody()
+
+def drawNetwork(df):
+    
+    G = nx.from_pandas_edgelist(df)
+    pos = nx.spring_layout(G,k=0.3)
+    d = nx.degree(G)
+    # Plot it
+    d = dict(d) 
+    
+    # d = {k:v for (k,v) in d.items() if v>1}
+
+    nx.draw(G, pos, with_labels = True, nodelist=d.keys(), node_size = [v * 100 for v in d.values()])
+
+    plt.show()
+
+
+
+
+df = readBody()
+drawNetwork(df)
